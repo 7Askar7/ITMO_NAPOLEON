@@ -26,9 +26,8 @@ client = TelegramClient('user_session_2', config["api_id"], config["api_hash"])
 bot_settings = {
 	"messages": [],
 	# "model": "openai/gpt-4o-mini",
-	"model": "SberGiga",
+	"model": "EXAMPLE",
 }
-
 
 def do_send_post_request(data, url, headers={'Content-Type': 'application/json; charset=UTF-8'}):
 	try:
@@ -36,7 +35,13 @@ def do_send_post_request(data, url, headers={'Content-Type': 'application/json; 
 
 		response = requests.post(config["url"] + url, json=data, headers=headers, stream=True)
 
+		print("as is")
+		print(response.content)
+
 		rsp = response.content.decode('utf8').split("\n\n")
+
+		print(rsp)
+		print(response)
 
 		response = ""
 
@@ -44,12 +49,14 @@ def do_send_post_request(data, url, headers={'Content-Type': 'application/json; 
 			js = {}
 			try:
 				js = json.loads(chunk[6:])
+				print("js")
+				print(js)
 			except Exception:
 				continue
 			if "choices" not in js:
 				continue
 			for msg in js["choices"]:
-				if "delta" not in msg:
+				if "delta" not in msg or "content" not in msg["delta"]:
 					continue
 				response += msg["delta"]["content"]
 
@@ -171,29 +178,7 @@ async def start_message(event):
 	''')
 
 async def write_via_email(mail):
-	token = config["token"]
-	headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:130.0) Gecko/20100101 Firefox/130.0",
-        "Accept": "*/*",
-        "Accept-Language": "ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3",
-        "Accept-Encoding": "gzip, deflate",
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json",
-        "Origin": config["url"],
-        "Connection": "keep-alive",
-        "Cookie": f"token={token}",
-        "Priority": "u=0",
-	}
-
-	data = {
-        "answer": f"напишите мне пожалуйста на {mail}"
-    }
-
-	url = "/query"
-
-	response = requests.post(config["url"] + url, json=data, headers=headers)
-
-	print(response.json())
+	return send_post_request(f"Напишите мне на {mail}")
 
 # Обработчик входящих сообщений от конкретных пользователей
 @client.on(events.NewMessage())
