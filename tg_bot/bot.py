@@ -3,6 +3,9 @@ import json
 import requests
 from requests.auth import HTTPBasicAuth, HTTPDigestAuth
 
+import random
+from messages import MES_1, MES_2
+
 def load_config(config_file):
 	try:
 		with open(config_file, 'r') as file:
@@ -22,7 +25,8 @@ client = TelegramClient('user_session_2', config["api_id"], config["api_hash"])
 
 bot_settings = {
 	"messages": [],
-	"model": "openai/gpt-4o-mini",
+	# "model": "openai/gpt-4o-mini",
+	"model": "SberGiga",
 }
 
 
@@ -121,23 +125,75 @@ async def set_settings(event):
     except (json.JSONDecodeError, IndexError) as e:
         await event.respond('Invalid settings. Use /set_settings {"key": "value"}')
 
+def get_first_message():
+	randoms = [MES_1, MES_2]
+	return random.choice(randoms)
 
 # Обработчик команды /send_message
 @bot.on(events.NewMessage(pattern='/send_message'))
 async def send_message(event):
     try:
-        # Пример команды: /send_message username_of_the_user
-        command, username, message = event.message.text.split(' ', 3)
-        # resp = do_send_post_request({"chat": {}}, "/api/v1/chats/new")
-        # print("new chat request")
-        # print(resp)
-        # bot_settings["chat"] = resp
+        command, username, via = event.message.text.split(' ', 3)
+
+        print(command, username, via)
+
+        if via != "mail" and via != "tg":
+            await event.respond('Ошибка обработки команды. Способ оповещения должен быть один [mail, tg]')
+
+        message = get_first_message()
+
+        bot_settings["messages"].append({
+            "role": "assistant",
+            "content": message,
+        })
+
+        if via == "mail":
+            write_via_email(username)
+            await event.respond('Сообщение отправлено по email')
+            return
 
         user = await bot.get_entity(username)
         await client.send_message(user, message)
-        await event.respond('Message sent to {}: {}'.format(username, message))
+
+        file = open('example.docx', 'rb')
+        await client.send_file(user, file)
+
+        await event.respond('Сообщение отправлено'.format(username))
     except Exception as e:
-        await event.respond('Failed to send message. Error: {}'.format(str(e)))
+        await event.respond('Ошиька отправки сообщения. {}'.format(str(e)))
+
+@bot.on(events.NewMessage(pattern='/start'))
+async def start_message(event):
+	await event.respond('''
+Добрый день!
+Это бот Napoleon IT. Чтобы попросить написать сообщение, используйте команду /send_message:
+/send_message, [tg, email] [username, email]
+	''')
+
+async def write_via_email(mail):
+	token = config["token"]
+	headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:130.0) Gecko/20100101 Firefox/130.0",
+        "Accept": "*/*",
+        "Accept-Language": "ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3",
+        "Accept-Encoding": "gzip, deflate",
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+        "Origin": config["url"],
+        "Connection": "keep-alive",
+        "Cookie": f"token={token}",
+        "Priority": "u=0",
+	}
+
+	data = {
+        "answer": f"напишите мне пожалуйста на {mail}"
+    }
+
+	url = "/query"
+
+	response = requests.post(config["url"] + url, json=data, headers=headers)
+
+	print(response.json())
 
 # Обработчик входящих сообщений от конкретных пользователей
 @client.on(events.NewMessage())
