@@ -1,6 +1,6 @@
 from prompts import PROMPT_CLASSIFICATION, PROMPT_DIALOGUE, PROMPT_DETECTION, PROMT_QUESTION_COMPANY, PROMPT_FOR_GENERATION 
 from Gigachat import GigaChatBOT
-from DB.db_request import send_query
+from db.db_request import send_query
 from llm_request import send_request_choco
 from messages import MES_1, MES_2
 import os

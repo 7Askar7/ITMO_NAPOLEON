@@ -1,0 +1,9 @@
+create_agent_trash.ipynb
+get_atribute.py
+
+db\itog_results.json
+db\loaders.ipynb
+
+db\__pycache__
+agent_module\__pycache__
+__pycache__
