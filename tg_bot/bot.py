@@ -26,7 +26,7 @@ client = TelegramClient('user_session_2', config["api_id"], config["api_hash"])
 bot_settings = {
 	"messages": [],
 	# "model": "openai/gpt-4o-mini",
-	"model": "EXAMPLE",
+	"model": "sales_agent_pipeline",
 }
 
 def do_send_post_request(data, url, headers={'Content-Type': 'application/json; charset=UTF-8'}):
@@ -155,11 +155,12 @@ async def send_message(event):
         })
 
         if via == "mail":
-            write_via_email(username)
+            await write_via_email(username)
             await event.respond('Сообщение отправлено по email')
             return
 
-        user = await bot.get_entity(username)
+        # user = await bot.get_entity(username)
+        user = await client.get_entity(username)
         await client.send_message(user, message)
 
         file = open('example.docx', 'rb')
